@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PALABRA PELIGROSA</title>
+<style>
+/* ============================================================
+   PALABRA PELIGROSA — Juego de fiesta tipo Tabú / Password
+   Todo en un solo archivo: HTML + CSS + JS Vanilla.
+   Sin dependencias externas. Funciona offline.
+   ============================================================ */
+
+/* ---------- Variables de color (identidad visual) ---------- */
+:root{
+  --bg-0:#050406;
+  --bg-1:#1a0306;
+  --bg-2:#2b0509;
+  --rojo:#ff1f3d;
+  --rojo-neon:#ff234b;
+  --rojo-fuerte:#c40024;
+  --rojo-card-1:#e60022;
+  --rojo-card-2:#8a0014;
+  --azul:#18b6ff;
+  --azul-bril:#39c6ff;
+  --azul-card-1:#0b2a63;
+  --azul-card-2:#061534;
+  --blanco:#ffffff;
+  --gris:#b9b2b6;
+  --verde:#1ec66a;
+  --verde2:#17b35e;
+  --amarillo:#ffd23f;
+  --panel:rgba(20,6,10,0.72);
+  --panel-borde:rgba(255,40,70,0.28);
+  --sombra-rojo:0 0 40px rgba(255,31,61,0.35);
+  --sombra-azul:0 0 40px rgba(24,182,255,0.35);
+  --fuente: "Arial Black","Segoe UI",system-ui,"Helvetica Neue",Arial,sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:var(--fuente);
+  color:var(--blanco);
+  background:
+    radial-gradient(1200px 700px at 50% -10%, rgba(255,31,61,0.22), transparent 60%),
+    radial-gradient(900px 600px at 0% 100%, rgba(196,0,36,0.20), transparent 60%),
+    radial-gradient(900px 600px at 100% 100%, rgba(120,0,20,0.18), transparent 60%),
+    linear-gradient(160deg, var(--bg-0), var(--bg-1) 55%, var(--bg-2));
+  background-attachment:fixed;
+  min-height:100%;
+  overflow-x:hidden;
+}
+/* Resplandor rojo suave animado de fondo */
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  background:radial-gradient(600px 400px at 50% 30%, rgba(255,31,61,0.10), transparent 70%);
+  animation:pulseGlow 6s ease-in-out infinite;
+  pointer-events:none;z-index:0;
+}
+@keyframes pulseGlow{0%,100%{opacity:.5;}50%{opacity:1;}}
+
+button{font-family:inherit;cursor:pointer;border:none;color:inherit;}
+button:focus-visible{outline:3px solid var(--azul-bril);outline-offset:2px;}
+input,select,textarea{font-family:inherit;}
+
+/* ---------- Estructura de pantallas ---------- */
+#app{position:relative;z-index:1;min-height:100vh;min-height:100dvh;}
+.screen{display:none;min-height:100vh;min-height:100dvh;padding:clamp(14px,3vw,34px);animation:fadeIn .35s ease;}
+.screen.active{display:flex;flex-direction:column;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+/* ---------- Título / logo ---------- */
+.logo{
+  text-align:center;line-height:.95;margin:auto 0 0;
+  padding-top:clamp(20px,6vh,70px);
+}
+.logo .l1{
+  display:block;font-size:clamp(2.6rem,11vw,7rem);font-weight:900;
+  color:var(--azul-bril);letter-spacing:2px;
+  text-shadow:0 0 18px rgba(57,198,255,.8),0 0 40px rgba(24,182,255,.5);
+}
+.logo .l2{
+  display:block;font-size:clamp(3rem,13vw,8.5rem);font-weight:900;
+  color:var(--rojo-neon);letter-spacing:1px;
+  text-shadow:0 0 18px rgba(255,35,75,.9),0 0 44px rgba(255,31,61,.55);
+  animation:flick 4s steps(40) infinite;
+}
+@keyframes flick{0%,97%,100%{opacity:1;}98%{opacity:.75;}99%{opacity:.9;}}
+.tagline{text-align:center;color:var(--gris);font-weight:700;letter-spacing:4px;
+  font-size:clamp(.7rem,2.4vw,1rem);margin-top:10px;text-transform:uppercase;}
+
+/* ---------- Botones de menú ---------- */
+.menu{display:flex;flex-direction:column;gap:14px;max-width:460px;width:100%;
+  margin:clamp(24px,6vh,56px) auto auto;padding-bottom:30px;}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:clamp(14px,2.2vh,20px);border-radius:16px;font-weight:900;
+  font-size:clamp(1rem,3.4vw,1.4rem);letter-spacing:1px;text-transform:uppercase;
+  background:linear-gradient(145deg,#2a0a10,#160407);
+  color:#fff;border:2px solid var(--panel-borde);
+  box-shadow:0 8px 22px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+  transition:transform .12s ease, box-shadow .2s ease, background .2s ease, border-color .2s;
+}
+.btn:hover{transform:translateY(-2px);border-color:var(--rojo);box-shadow:var(--sombra-rojo);}
+.btn:active{transform:translateY(1px) scale(.99);}
+.btn.primary{background:linear-gradient(145deg,var(--rojo),var(--rojo-fuerte));border-color:#ff5f77;
+  box-shadow:0 10px 26px rgba(255,31,61,.4);}
+.btn.primary:hover{box-shadow:0 12px 34px rgba(255,31,61,.6);}
+.btn.blue{background:linear-gradient(145deg,var(--azul),#0a4f8c);border-color:#5fd0ff;}
+.btn.ghost{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.15);}
+.btn.green{background:linear-gradient(145deg,var(--verde),var(--verde2));border-color:#6bf0a7;color:#042412;}
+.btn.sm{padding:9px 14px;font-size:.85rem;border-radius:11px;}
+.btn.xs{padding:6px 10px;font-size:.72rem;border-radius:9px;letter-spacing:0;}
+.btn[disabled]{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+
+/* ---------- Encabezado de subpantallas ---------- */
+.subhead{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.subhead h2{font-size:clamp(1.4rem,5vw,2.4rem);color:#fff;letter-spacing:1px;
+  text-shadow:0 0 16px rgba(255,31,61,.4);flex:1;min-width:180px;}
+.back{background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.14);
+  border-radius:12px;padding:10px 16px;font-weight:900;font-size:.95rem;}
+.back:hover{border-color:var(--rojo);}
+
+.scroll{overflow-y:auto;flex:1;padding-right:4px;}
+.panel{background:var(--panel);border:1px solid var(--panel-borde);border-radius:18px;
+  padding:clamp(14px,2.4vw,22px);margin-bottom:16px;backdrop-filter:blur(4px);}
+.panel h3{font-size:1.1rem;margin-bottom:12px;color:var(--azul-bril);letter-spacing:1px;text-transform:uppercase;}
+
+/* ---------- Categorías ---------- */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+.cat-card{
+  position:relative;border-radius:16px;padding:16px 16px 14px;cursor:pointer;
+  background:linear-gradient(150deg,#230810,#120307);border:2px solid rgba(255,255,255,.1);
+  transition:transform .12s, border-color .2s, box-shadow .2s;user-select:none;
+}
+.cat-card:hover{transform:translateY(-2px);}
+.cat-card.on{border-color:var(--rojo-neon);box-shadow:var(--sombra-rojo);
+  background:linear-gradient(150deg,#3a0a14,#1c0409);}
+.cat-card .tick{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.2);color:transparent;}
+.cat-card.on .tick{background:var(--rojo);border-color:#ff8097;color:#fff;}
+.cat-name{font-size:1.05rem;font-weight:900;line-height:1.15;padding-right:30px;}
+.cat-meta{color:var(--gris);font-size:.82rem;margin-top:8px;font-weight:700;}
+.cat-actions{display:flex;gap:6px;margin-top:12px;}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.chip{background:rgba(255,31,61,.14);border:1px solid var(--panel-borde);color:#fff;
+  padding:6px 12px;border-radius:30px;font-size:.8rem;font-weight:800;}
+
+/* ---------- Formularios ---------- */
+label.field{display:block;margin-bottom:12px;font-weight:800;font-size:.85rem;color:var(--gris);
+  letter-spacing:.5px;text-transform:uppercase;}
+.field input,.field select,.field textarea,input.ipt,select.ipt{
+  width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;font-size:1rem;font-weight:700;
+  background:#0d0306;color:#fff;border:2px solid rgba(255,255,255,.14);transition:border-color .2s;
+}
+.field input:focus,.field select:focus,.ipt:focus{outline:none;border-color:var(--azul-bril);
+  box-shadow:0 0 0 3px rgba(57,198,255,.2);}
+select.ipt option{background:#0d0306;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:560px){.row2{grid-template-columns:1fr;}}
+
+/* ---------- Tabla / lista admin ---------- */
+.tcard{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;
+  padding:10px 12px;margin-bottom:8px;}
+.tcard .w-ok{color:var(--azul-bril);font-weight:900;}
+.tcard .w-bad{color:var(--rojo-neon);font-weight:900;}
+.tcard .w-cat{display:block;color:var(--gris);font-size:.72rem;font-weight:700;margin-top:2px;}
+.tcard .ops{display:flex;gap:6px;}
+@media(max-width:620px){.tcard{grid-template-columns:1fr 1fr;}.tcard .ops{grid-column:1/-1;justify-content:flex-end;}}
+
+/* ---------- Config: segmentos / toggles ---------- */
+.seg{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.seg button{padding:10px 14px;border-radius:12px;font-weight:800;font-size:.9rem;
+  background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);color:#fff;}
+.seg button.on{background:linear-gradient(145deg,var(--rojo),var(--rojo-fuerte));border-color:#ff8097;
+  box-shadow:var(--sombra-rojo);}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-row span.lbl{font-weight:800;}
+.switch{position:relative;width:58px;height:32px;flex:none;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:#3a1016;border-radius:30px;transition:.25s;border:1px solid rgba(255,255,255,.1);}
+.slider::before{content:"";position:absolute;height:24px;width:24px;left:4px;top:3px;background:#fff;
+  border-radius:50%;transition:.25s;}
+.switch input:checked + .slider{background:var(--verde);}
+.switch input:checked + .slider::before{transform:translateX(26px);}
+
+/* ============================================================
+   PANTALLA DE JUEGO
+   ============================================================ */
+#screen-game{padding:clamp(10px,2vw,22px);gap:clamp(10px,2vh,18px);}
+.game-top{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;}
+.g-info{min-width:0;}
+.g-team{font-size:clamp(1.1rem,3.5vw,1.8rem);font-weight:900;color:#fff;
+  text-shadow:0 0 14px rgba(255,31,61,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;}
+.g-cat{color:var(--gris);font-weight:800;font-size:clamp(.7rem,2.2vw,.95rem);letter-spacing:.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;}
+.g-scoreboard{display:flex;justify-content:center;gap:10px;}
+.sb{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);border-radius:14px;
+  padding:6px 14px;text-align:center;min-width:92px;transition:border-color .2s,box-shadow .2s;}
+.sb.turn{border-color:var(--rojo-neon);box-shadow:var(--sombra-rojo);background:rgba(255,31,61,.12);}
+.sb .sb-name{font-size:.72rem;color:var(--gris);font-weight:800;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:120px;}
+.sb .sb-score{font-size:clamp(1.3rem,4vw,2rem);font-weight:900;line-height:1;}
+.g-controls{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.g-timer{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:900;min-width:2.4ch;text-align:center;
+  padding:2px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);}
+.g-timer.low{color:var(--rojo-neon);border-color:var(--rojo-neon);animation:tick 1s steps(2) infinite;}
+.g-timer.nolimit{font-size:1.1rem;}
+@keyframes tick{50%{transform:scale(1.12);box-shadow:var(--sombra-rojo);}}
+.g-remaining{font-size:.75rem;color:var(--gris);font-weight:800;text-align:center;}
+.icon-btn{width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,.06);
+  border:2px solid rgba(255,255,255,.14);font-size:1.2rem;display:flex;align-items:center;justify-content:center;}
+.icon-btn:hover{border-color:var(--rojo);}
+
+/* --- El área de tarjetas (lo más importante) --- */
+.card-area{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2.2vw,26px);
+  align-items:stretch;min-height:0;}
+.card{position:relative;border-radius:26px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:clamp(16px,3vw,40px);text-align:center;overflow:hidden;min-height:0;}
+.card-label{font-size:clamp(1.3rem,4.5vw,3rem);font-weight:900;letter-spacing:3px;margin-bottom:12px;}
+.card-word{font-size:clamp(2.2rem,9vw,7rem);font-weight:900;line-height:1.02;color:#fff;
+  text-transform:uppercase;text-shadow:0 4px 18px rgba(0,0,0,.6);word-break:break-word;hyphens:auto;}
+.card-word.len-m{font-size:clamp(1.8rem,7vw,5.2rem);}
+.card-word.len-l{font-size:clamp(1.4rem,5.5vw,4rem);}
+.card-word.len-xl{font-size:clamp(1.15rem,4.2vw,2.8rem);}
+.card-correcta{background:linear-gradient(160deg,var(--azul-card-1),var(--azul-card-2));
+  border:3px solid var(--azul-bril);box-shadow:var(--sombra-azul),inset 0 0 60px rgba(24,182,255,.12);}
+.card-correcta .card-label{color:var(--azul-bril);text-shadow:0 0 18px rgba(57,198,255,.9);}
+.card-peligrosa{background:linear-gradient(160deg,var(--rojo-card-1),var(--rojo-card-2));
+  border:3px solid var(--rojo-neon);box-shadow:var(--sombra-rojo),inset 0 0 60px rgba(255,31,61,.14);}
+.card-peligrosa .card-label{color:#fff;text-shadow:0 0 18px rgba(255,35,75,.95);}
+/* ícono de peligro decorativo */
+.card-peligrosa::after{content:"☠";position:absolute;font-size:9rem;opacity:.08;right:-10px;bottom:-30px;}
+
+/* animaciones de tarjeta */
+.card-area.anim-in{animation:cardIn .32s ease;}
+@keyframes cardIn{from{opacity:0;transform:scale(.94) translateY(12px);}to{opacity:1;transform:none;}}
+.card-area.anim-ok{animation:popOk .4s ease;}
+@keyframes popOk{30%{transform:scale(1.03);}60%{transform:scale(.99);}100%{transform:none;}}
+.card-area.anim-pass{animation:slidePass .32s ease;}
+@keyframes slidePass{from{transform:translateX(0);}40%{transform:translateX(-30px);opacity:.4;}41%{transform:translateX(30px);}to{transform:none;opacity:1;}}
+.card-area.anim-shake{animation:shake .5s;}
+@keyframes shake{10%,90%{transform:translateX(-6px);}20%,80%{transform:translateX(8px);}30%,50%,70%{transform:translateX(-12px);}40%,60%{transform:translateX(12px);}}
+
+/* --- Botones de acción del juego --- */
+.game-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,1.5vw,16px);}
+.act{padding:clamp(14px,2.4vh,26px) 8px;border-radius:18px;font-weight:900;
+  font-size:clamp(.85rem,2.4vw,1.35rem);letter-spacing:.5px;text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.05;
+  border:3px solid transparent;transition:transform .1s, box-shadow .2s, filter .2s;}
+.act:hover{transform:translateY(-2px);}
+.act:active{transform:translateY(2px) scale(.98);}
+.act .ico{font-size:1.5em;}
+.act-acerto{background:linear-gradient(145deg,var(--verde),var(--verde2));color:#042412;border-color:#6bf0a7;
+  box-shadow:0 10px 24px rgba(30,198,106,.35);}
+.act-pasar{background:linear-gradient(145deg,#3a2a00,#241a00);color:var(--amarillo);border-color:#6b5300;}
+.act-otra{background:linear-gradient(145deg,var(--azul),#0a4f8c);color:#fff;border-color:#5fd0ff;}
+.act-peligro{background:linear-gradient(145deg,var(--rojo),var(--rojo-fuerte));color:#fff;border-color:#ff8097;
+  box-shadow:0 10px 24px rgba(255,31,61,.4);}
+.act[disabled]{filter:grayscale(.6) brightness(.6);cursor:not-allowed;transform:none;}
+.key-hint{font-size:.62rem;opacity:.7;font-weight:800;letter-spacing:0;}
+
+/* Flash rojo de penalización sobre toda la pantalla */
+#danger-flash{position:fixed;inset:0;background:radial-gradient(circle,rgba(255,0,30,.0),rgba(180,0,20,.55));
+  z-index:60;pointer-events:none;opacity:0;}
+#danger-flash.on{animation:dflash .7s ease;}
+@keyframes dflash{0%{opacity:0;}25%{opacity:1;}100%{opacity:0;}}
+
+/* Responsive: móvil / vertical -> apilar tarjetas */
+@media(max-width:760px), (max-aspect-ratio:1/1){
+  .card-area{grid-template-columns:1fr;grid-template-rows:1fr 1fr;}
+  .game-top{grid-template-columns:1fr;gap:6px;}
+  .g-scoreboard{order:3;}
+  .g-controls{order:2;justify-content:space-between;}
+  .g-info{text-align:center;}
+  .g-team,.g-cat{max-width:90vw;}
+}
+@media(max-width:560px){
+  .game-actions{grid-template-columns:1fr 1fr;}
+  .act .key-hint{display:none;}
+}
+
+/* ============================================================
+   OVERLAYS (pausa, resultados, modal, toast)
+   ============================================================ */
+.overlay{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+  background:rgba(5,2,4,.8);backdrop-filter:blur(6px);padding:20px;animation:fadeIn .25s ease;}
+.overlay.active{display:flex;}
+.overlay-box{background:linear-gradient(160deg,#1c0509,#0c0206);border:2px solid var(--panel-borde);
+  border-radius:22px;padding:clamp(20px,4vw,34px);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;
+  box-shadow:var(--sombra-rojo);}
+.overlay-box h2{text-align:center;margin-bottom:6px;font-size:clamp(1.6rem,6vw,2.6rem);}
+.overlay-box .sub{text-align:center;color:var(--gris);margin-bottom:20px;font-weight:700;}
+.ov-actions{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.score-edit{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 14px;margin-bottom:8px;}
+.score-edit .nm{font-weight:900;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.score-edit .ctr{display:flex;align-items:center;gap:10px;}
+.score-edit .val{font-size:1.6rem;font-weight:900;min-width:2ch;text-align:center;}
+.rnd{width:42px;height:42px;border-radius:50%;font-size:1.4rem;font-weight:900;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);}
+
+/* Resultados / ganador */
+#screen-results{align-items:center;justify-content:center;text-align:center;}
+.winner-box{max-width:560px;width:100%;}
+.trophy{font-size:clamp(4rem,18vw,9rem);animation:bounce 1.2s ease infinite;filter:drop-shadow(0 0 30px rgba(255,210,63,.6));}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-18px);}}
+.winner-name{font-size:clamp(2rem,9vw,4rem);font-weight:900;color:var(--amarillo);
+  text-shadow:0 0 30px rgba(255,210,63,.6);margin:6px 0;}
+.final-scores{display:flex;justify-content:center;gap:20px;margin:22px 0;flex-wrap:wrap;}
+.fs{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);border-radius:18px;padding:16px 26px;min-width:140px;}
+.fs .n{color:var(--gris);font-weight:800;font-size:.9rem;}
+.fs .s{font-size:3rem;font-weight:900;}
+.fs.win{border-color:var(--amarillo);box-shadow:0 0 30px rgba(255,210,63,.4);}
+/* confeti */
+.confetti{position:fixed;top:-20px;width:12px;height:16px;z-index:55;pointer-events:none;border-radius:2px;
+  animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.9;}}
+
+/* Modal genérico (confirmaciones / prompts) */
+#modal .overlay-box{max-width:460px;}
+#modal-msg{margin-bottom:16px;font-weight:700;line-height:1.4;text-align:center;}
+#modal-input{margin-bottom:16px;}
+.modal-btns{display:flex;gap:10px;}
+.modal-btns .btn{flex:1;}
+
+/* Toast */
+#toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:80;
+  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:92%;max-width:420px;}
+.toast{background:rgba(20,6,10,.95);border:2px solid var(--panel-borde);border-radius:14px;
+  padding:12px 18px;font-weight:800;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:toastIn .3s ease;
+  text-align:center;width:100%;}
+.toast.ok{border-color:var(--verde);}
+.toast.err{border-color:var(--rojo-neon);}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+
+.empty{text-align:center;color:var(--gris);padding:40px 10px;font-weight:700;}
+.hint{color:var(--gris);font-size:.82rem;font-weight:700;margin-top:4px;line-height:1.4;}
+.danger-text{color:var(--rojo-neon);}
+small.muted{color:var(--gris);font-weight:700;}
+hr.div{border:none;border-top:1px solid rgba(255,255,255,.08);margin:16px 0;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:rgba(255,31,61,.4);border-radius:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ MENÚ PRINCIPAL ============ -->
+  <section id="screen-menu" class="screen active">
+    <div class="logo">
+      <span class="l1">PALABRA</span>
+      <span class="l2">PELIGROSA</span>
+    </div>
+    <p class="tagline">Dilo bien… o cae la trampa ☠</p>
+    <nav class="menu">
+      <button class="btn primary" id="m-jugar">▶ JUGAR</button>
+      <button class="btn" id="m-cat">▦ CATEGORÍAS</button>
+      <button class="btn" id="m-admin">✎ ADMINISTRAR PALABRAS</button>
+      <button class="btn" id="m-config">⚙ CONFIGURACIÓN</button>
+      <button class="btn ghost sm" id="m-fs">⛶ Pantalla completa</button>
+    </nav>
+  </section>
+
+  <!-- ============ INICIAR PARTIDA ============ -->
+  <section id="screen-play" class="screen">
+    <div class="subhead">
+      <button class="back" data-go="menu">‹ Volver</button>
+      <h2>Jugar</h2>
+    </div>
+    <div class="scroll">
+      <div class="panel" id="continue-panel" style="display:none;">
+        <h3>Partida guardada</h3>
+        <p class="hint" id="continue-info"></p>
+        <div class="ov-actions">
+          <button class="btn green" id="p-continue">▶ Continuar partida</button>
+          <button class="btn ghost sm" id="p-discard">✕ Descartar partida guardada</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Equipos</h3>
+        <div class="row2">
+          <label class="field">Equipo 1
+            <input class="ipt" id="team1-name" maxlength="20" placeholder="Equipo 1">
+          </label>
+          <label class="field">Equipo 2
+            <input class="ipt" id="team2-name" maxlength="20" placeholder="Equipo 2">
+          </label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Categorías activas</h3>
+        <p class="hint" id="play-cat-summary">—</p>
+        <button class="btn blue sm" data-go="categories" style="margin-top:10px;">Elegir categorías</button>
+      </div>
+
+      <div class="panel">
+        <h3>Resumen de configuración</h3>
+        <p class="hint" id="play-config-summary">—</p>
+        <button class="btn ghost sm" data-go="config" style="margin-top:10px;">Ajustar configuración</button>
+      </div>
+
+      <button class="btn primary" id="p-start" style="font-size:1.4rem;padding:20px;">▶ EMPEZAR NUEVA PARTIDA</button>
+    </div>
+  </section>
+
+  <!-- ============ CATEGORÍAS ============ -->
+  <section id="screen-categories" class="screen">
+    <div class="subhead">
+      <button class="back" data-go="back">‹ Volver</button>
+      <h2>Categorías</h2>
+    </div>
+    <div class="toolbar">
+      <button class="btn sm green" id="cat-all">✓ Activar todas</button>
+      <button class="btn sm ghost" id="cat-none">✕ Desactivar todas</button>
+      <button class="btn sm blue" id="cat-new">＋ Nueva categoría</button>
+      <span class="chip" id="cat-count-chip">0 seleccionadas</span>
+    </div>
+    <div class="scroll"><div class="cat-grid" id="cat-grid"></div></div>
+  </section>
+
+  <!-- ============ ADMINISTRAR PALABRAS ============ -->
+  <section id="screen-admin" class="screen">
+    <div class="subhead">
+      <button class="back" data-go="menu">‹ Volver</button>
+      <h2>Administrar palabras</h2>
+    </div>
+    <div class="scroll">
+      <div class="panel">
+        <h3 id="admin-form-title">Nueva tarjeta</h3>
+        <div class="row2">
+          <label class="field">Palabra CORRECTA
+            <input class="ipt" id="adm-correcta" maxlength="40" placeholder="Ej: RESACA">
+          </label>
+          <label class="field">Palabra PELIGROSA
+            <input class="ipt" id="adm-peligrosa" maxlength="40" placeholder="Ej: CAÑA">
+          </label>
+        </div>
+        <label class="field">Categoría
+          <select class="ipt" id="adm-cat"></select>
+        </label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn green" id="adm-save">💾 Guardar tarjeta</button>
+          <button class="btn ghost sm" id="adm-cancel" style="display:none;">Cancelar edición</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Importar / Exportar / Respaldo</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn sm blue" id="exp-json">⬇ Exportar JSON</button>
+          <button class="btn sm blue" id="exp-csv">⬇ Exportar CSV</button>
+          <button class="btn sm" id="imp-json">⬆ Importar JSON</button>
+          <button class="btn sm" id="imp-csv">⬆ Importar CSV</button>
+          <button class="btn sm green" id="backup-btn">🛡 Copia de seguridad</button>
+          <button class="btn sm ghost" id="restore-btn">↺ Restaurar base inicial</button>
+        </div>
+        <p class="hint">Al importar podrás elegir entre <b>combinar</b> con tus tarjetas o <b>reemplazar</b> todo. Nunca se borra nada sin avisar.</p>
+        <input type="file" id="file-input" accept=".json,.csv" style="display:none;">
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <h3 style="margin:0;">Tarjetas <span class="chip" id="adm-total">0</span></h3>
+        </div>
+        <div class="toolbar" style="margin-top:12px;">
+          <input class="ipt" id="adm-search" placeholder="🔍 Buscar palabra..." style="flex:1;min-width:160px;">
+          <select class="ipt" id="adm-filter" style="width:auto;min-width:160px;"></select>
+        </div>
+        <div id="adm-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONFIGURACIÓN ============ -->
+  <section id="screen-config" class="screen">
+    <div class="subhead">
+      <button class="back" data-go="back">‹ Volver</button>
+      <h2>Configuración</h2>
+    </div>
+    <div class="scroll">
+      <div class="panel">
+        <h3>Duración del turno</h3>
+        <div class="seg" id="cfg-time"></div>
+      </div>
+      <div class="panel">
+        <h3>Condición de victoria</h3>
+        <div class="seg" id="cfg-victory"></div>
+        <label class="field" id="cfg-target-wrap" style="margin-top:14px;">
+          <span id="cfg-target-label">Puntos para ganar</span>
+          <input class="ipt" id="cfg-target" type="number" min="1" max="999" value="20">
+        </label>
+      </div>
+      <div class="panel">
+        <h3>Penalización por palabra peligrosa</h3>
+        <div class="seg" id="cfg-penalty"></div>
+      </div>
+      <div class="panel">
+        <h3>Reglas adicionales</h3>
+        <div class="toggle-row">
+          <span class="lbl">Pases ilimitados</span>
+          <label class="switch"><input type="checkbox" id="cfg-unlpass"><span class="slider"></span></label>
+        </div>
+        <label class="field" id="cfg-maxpass-wrap">Máximo de pases por turno
+          <input class="ipt" id="cfg-maxpass" type="number" min="0" max="20" value="3">
+        </label>
+        <div class="toggle-row">
+          <span class="lbl">Permitir tarjetas repetidas</span>
+          <label class="switch"><input type="checkbox" id="cfg-repeat"><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="lbl">Sonidos</span>
+          <label class="switch"><input type="checkbox" id="cfg-sound" checked><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="lbl">Animaciones</span>
+          <label class="switch"><input type="checkbox" id="cfg-anim" checked><span class="slider"></span></label>
+        </div>
+      </div>
+      <p class="hint">Todo se guarda automáticamente en este navegador.</p>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA DE JUEGO ============ -->
+  <section id="screen-game" class="screen">
+    <header class="game-top">
+      <div class="g-info">
+        <div class="g-team" id="g-team">Equipo 1</div>
+        <div class="g-cat" id="g-cat">Categoría</div>
+      </div>
+      <div class="g-scoreboard" id="g-scoreboard"></div>
+      <div class="g-controls">
+        <div class="g-timer" id="g-timer">60</div>
+        <button class="icon-btn" id="btn-pause" title="Pausar (P)">⏸</button>
+        <button class="icon-btn" id="g-fs" title="Pantalla completa (F)">⛶</button>
+      </div>
+    </header>
+    <div class="g-remaining" id="g-remaining">— tarjetas restantes</div>
+
+    <main class="card-area" id="card-area">
+      <div class="card card-correcta">
+        <div class="card-label">CORRECTA</div>
+        <div class="card-word" id="word-correcta">—</div>
+      </div>
+      <div class="card card-peligrosa">
+        <div class="card-label">PELIGROSA</div>
+        <div class="card-word" id="word-peligrosa">—</div>
+      </div>
+    </main>
+
+    <footer class="game-actions">
+      <button class="act act-acerto" id="btn-acerto"><span class="ico">✓</span>ACERTÓ<span class="key-hint">1 / Enter</span></button>
+      <button class="act act-pasar" id="btn-pasar"><span class="ico">↷</span>PASAR<span class="key-hint">3</span></button>
+      <button class="act act-otra" id="btn-otra"><span class="ico">⟳</span>OTRA PALABRA<span class="key-hint">4</span></button>
+      <button class="act act-peligro" id="btn-peligro"><span class="ico">☠</span>PELIGROSA<span class="key-hint">2</span></button>
+    </footer>
+  </section>
+
+  <!-- ============ RESULTADOS ============ -->
+  <section id="screen-results" class="screen">
+    <div class="winner-box">
+      <div class="trophy">🏆</div>
+      <div class="sub" style="color:var(--gris);font-weight:800;letter-spacing:2px;">¡GANADOR!</div>
+      <div class="winner-name" id="winner-name">—</div>
+      <div class="final-scores" id="final-scores"></div>
+      <div class="ov-actions">
+        <button class="btn primary" id="res-rematch">↺ Revancha (mismos equipos)</button>
+        <button class="btn blue" id="res-new">Nueva partida</button>
+        <button class="btn ghost" data-go="menu">Menú principal</button>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /#app -->
+
+<!-- ============ OVERLAYS ============ -->
+<div id="danger-flash"></div>
+
+<!-- Pausa / interludio de turno -->
+<div class="overlay" id="pause-overlay">
+  <div class="overlay-box">
+    <h2 id="pause-title">Pausa</h2>
+    <p class="sub" id="pause-sub">Partida en pausa</p>
+    <div id="pause-scores"></div>
+    <div class="ov-actions">
+      <button class="btn green" id="pz-resume">▶ Reanudar / Comenzar turno</button>
+      <button class="btn blue sm" id="pz-cats">▦ Cambiar categorías</button>
+      <button class="btn ghost sm" id="pz-score">± Corregir puntaje</button>
+      <button class="btn ghost sm" id="pz-finish">🏁 Finalizar partida ahora</button>
+      <button class="btn ghost sm" id="pz-menu">Salir al menú (se guarda)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Corregir puntaje -->
+<div class="overlay" id="score-overlay">
+  <div class="overlay-box">
+    <h2>Corregir puntaje</h2>
+    <p class="sub">Ajusta manualmente los puntos</p>
+    <div id="score-edit-list"></div>
+    <div class="ov-actions"><button class="btn green" id="sc-done">Listo</button></div>
+  </div>
+</div>
+
+<!-- Modal genérico -->
+<div class="overlay" id="modal">
+  <div class="overlay-box">
+    <p id="modal-msg"></p>
+    <input class="ipt" id="modal-input" style="display:none;">
+    <div id="modal-extra"></div>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   PALABRA PELIGROSA — Lógica del juego (JS Vanilla)
+   ============================================================ */
+
+/* ---------- Utilidades ---------- */
+const $  = (sel, ctx=document) => ctx.querySelector(sel);
+const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+const uid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = (s) => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm = (s) => String(s||'').trim().replace(/\s+/g,' ');
+const normKey = (s) => norm(s).toLowerCase();
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+/* ---------- Base inicial de categorías y tarjetas ---------- */
+const DEFAULT_CATEGORIES = [
+  {id:'c1', name:'Carrete, alcohol y noche',        custom:false},
+  {id:'c2', name:'Chilenismos vs. español neutro',  custom:false},
+  {id:'c3', name:'Comida y bajón',                  custom:false},
+  {id:'c4', name:'Profesiones y oficios',           custom:false},
+  {id:'c5', name:'Mundo adulto',                    custom:false},
+  {id:'c6', name:'Fantasía, cine y cultura pop',    custom:false},
+  {id:'c7', name:'Amor, citas y relaciones',        custom:false},
+  {id:'c8', name:'Deporte, gym y salud',            custom:false},
+  {id:'c9', name:'Random, situaciones y humor adulto', custom:false},
+];
+
+/* Pares [CORRECTA, PELIGROSA] por categoría — 160 tarjetas oficiales del usuario.
+   CORRECTA = palabra neutra/formal que el equipo debe adivinar.
+   PELIGROSA = el chilenismo/palabra tentadora que NO se puede decir.
+   Editables y reemplazables desde el Administrador (sin tocar el código). */
+const DEFAULT_PAIRS = {
+  // 1. Carrete, alcohol y noche
+  c1:[['Resaca','Caña'],['Ebrio','Curado'],['Discoteca','Disco'],['Seguridad','Guardia'],
+      ['Energizante','Red Bull'],['Cóctel','Trago'],['Botillería','Boti'],['Remate','After'],
+      ['Embriaguez','Borrachera'],['Fiesta','Carrete'],['Cerveza de barril','Schop'],['Disc jockey','DJ'],
+      ['Alcohol','Copete'],['Trasnochar','Pasar de largo'],['Chupito','Shot'],['Bailar','Perrear']],
+  // 2. Chilenismos vs. español neutro
+  c2:[['Dinero','Plata'],['Trabajo','Pega'],['Automóvil','Auto'],['Novio/a','Pololo/a'],
+      ['Calzado deportivo','Zapatillas'],['Refrigerador','Refri'],['Computadora portátil','Notebook'],
+      ['Teléfono celular','Celu'],['Niño','Cabro chico'],['Autobús','Micro'],['Mentira','Chiva'],
+      ['Desorden','Despelote'],['Vivienda','Casa'],['Problema','Cacho'],['Tacaño','Apretado'],['Arruinado','Pato']],
+  // 3. Comida y bajón
+  c3:[['Hot dog','Completo'],['Elote','Choclo'],['Aguacate','Palta'],['Patatas fritas','Papas fritas'],
+      ['Gaseosa','Bebida'],['Emparedado','Sándwich'],['Hamburguesa','Burger'],['Cerveza','Chela'],
+      ['Salchicha','Vienesa'],['Antojo','Bajón'],['Palomitas','Cabritas'],['Perrito caliente','Completo'],
+      ['Comida rápida','Fast food'],['Parrillada','Asado'],['Sándwich de jamón y queso','Aliado'],['Bizcocho','Queque']],
+  // 4. Profesiones y oficios
+  c4:[['Médico','Doctor'],['Técnico en enfermería','TENS'],['Odontólogo','Dentista'],['Estilista','Peluquero'],
+      ['Psicoterapeuta','Psicólogo'],['Kinesiólogo','Kine'],['Docente','Profesor'],['Abogado litigante','Abogado'],
+      ['Albañil','Maestro'],['Desarrollador','Programador'],['Chef','Cocinero'],['Conductor','Chofer'],
+      ['Contable','Contador'],['Enfermero','TENS'],['Nutriólogo','Nutricionista'],['Creador de contenido','Influencer']],
+  // 5. Mundo adulto (25–30 años)
+  c5:[['Remuneración','Sueldo'],['Arrendamiento','Arriendo'],['Cuota hipotecaria','Dividendo'],['Tributos','Impuestos'],
+      ['Currículum','CV'],['Entrevista laboral','Entrevista de trabajo'],['Estudios universitarios','Carrera'],
+      ['Administradora de pensiones','AFP'],['Desempleado','Cesante'],['Horas extraordinarias','Horas extra'],
+      ['Reposo médico','Licencia'],['Atraso de pago','Mora'],['Endeudamiento','Deuda'],['Crédito universitario','CAE'],
+      ['Salario neto','Sueldo líquido'],['Feriado legal','Vacaciones']],
+  // 6. Fantasía, cine y cultura pop
+  c6:[['Equino','Caballo'],['Transformer','Robot'],['Vampiro','Drácula'],['Hechicero','Mago'],
+      ['Extraterrestre','Alien'],['Vengadores','Avengers'],['Muerto viviente','Zombi'],['Androide','Robot'],
+      ['Hombre araña','Spider-Man'],['Caballero oscuro','Batman'],['Hombre de acero','Superman'],['Monstruo de bolsillo','Pokémon'],
+      ['Consola de Nintendo','Switch'],['Monstruo gigante','Godzilla'],['Inteligencia artificial','IA'],['Universo Marvel','MCU']],
+  // 7. Amor, citas y relaciones
+  c7:[['Pareja','Pololo/a'],['Cita romántica','Cita'],['Ruptura','Quiebre'],['Flirteo','Coqueteo'],
+      ['Expareja','Ex'],['Infidelidad','Gorreo'],['Promesa de matrimonio','Compromiso'],['Seducir','Engrupir'],
+      ['Rechazo amoroso','Friendzone'],['Relación informal','Andar'],['Besarse','Comerse'],['Atractivo','Minazo'],
+      ['Desaparecer','Ghostear'],['Relación casual','Amigos con ventaja'],['Posesivo','Celoso'],['Pretendiente','Jote']],
+  // 8. Deporte, gym y salud
+  c8:[['Entrenador personal','Personal Trainer'],['Gimnasio','Gym'],['Proteína de suero','Whey'],['Carrera de 42 km','Maratón'],
+      ['Abdominales definidos','Calugas'],['Terapia física','Kinesiología'],['Resfriado común','Resfrío'],['Cefalea','Dolor de cabeza'],
+      ['Flexiones','Lagartijas'],['Sentadillas','Squats'],['Peso muerto','Deadlift'],['Ejercicio cardiovascular','Cardio'],
+      ['Hipertrofia','Ganar músculo'],['Abdomen','Guata'],['Monohidrato de creatina','Creatina'],['Zona media','Core']],
+  // 9. Random, situaciones y humor adulto (32)
+  c9:[['Chisme','Cahuín'],['Vergüenza ajena','Cringe'],['Mentiroso','Chamullento'],['Curioso','Sapo'],
+      ['Sospechoso','Turbio'],['Presumido','Agrandado'],['Mala suerte','Yeta'],['Desastre','Cagazo'],
+      ['Chismoso','Copuchento'],['Despistado','Volado'],['Farsante','Chanta'],['Envidioso','Picado'],
+      ['Ridículo','Payaso'],['Vergüenza','Plancha'],['Descontrol','Despelote'],['Discusión','Mocha'],
+      ['Resentido','Ardido'],['Arrogante','Soberbio'],['Manipulador','Tóxico'],['Obsesión','Stalkeo'],
+      ['Enamoramiento','Crush'],['Fracaso','Papelón'],['Engaño','Estafa'],['Secreto','Cahuín'],
+      ['Fama','Viral'],['Desconfianza','Red flag'],['Descarado','Patudo'],['Improvisación','Parche'],
+      ['Aburrimiento','Paja'],['Enojo','Emputecimiento'],['Fiesta improvisada','Junta'],['Persona intensa','Cargante']],
+};
+
+function buildDefaultCards(){
+  const cards = [];
+  for(const cat of DEFAULT_CATEGORIES){
+    (DEFAULT_PAIRS[cat.id]||[]).forEach(([c,p])=>{
+      cards.push({id:uid(), categoryId:cat.id, correcta:c, peligrosa:p});
+    });
+  }
+  return cards;
+}
+
+const DEFAULT_CONFIG = {
+  turnDuration:60,          // segundos, 0 = sin límite
+  victoryMode:'points',     // 'points' | 'rounds' | 'free'
+  victoryTarget:20,         // puntos o rondas
+  penaltyMode:'loseturn',   // 'loseturn' | 'minus2' | 'lose'
+  unlimitedPasses:true,
+  maxPasses:3,
+  allowRepeats:false,
+  sounds:true,
+  animations:true,
+};
+
+/* ---------- Persistencia (localStorage) ---------- */
+const STORAGE_KEY = 'palabraPeligrosa_v2';
+let DB = null;
+
+function freshDB(){
+  return {
+    version:1,
+    categories: DEFAULT_CATEGORIES.map(c=>({...c})),
+    cards: buildDefaultCards(),
+    config: {...DEFAULT_CONFIG},
+    teams: [{name:'Equipo 1'},{name:'Equipo 2'}],
+    selectedCategories: DEFAULT_CATEGORIES.map(c=>c.id),
+    savedGame: null,
+  };
+}
+
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){ DB = freshDB(); saveDB(); return; }
+    const data = JSON.parse(raw);
+    DB = Object.assign(freshDB(), data);
+    // Normalizar config con valores por defecto nuevos
+    DB.config = Object.assign({...DEFAULT_CONFIG}, data.config||{});
+    if(!Array.isArray(DB.categories) || !DB.categories.length) DB.categories = DEFAULT_CATEGORIES.map(c=>({...c}));
+    if(!Array.isArray(DB.cards)) DB.cards = [];
+    if(!Array.isArray(DB.teams) || DB.teams.length<2) DB.teams = [{name:'Equipo 1'},{name:'Equipo 2'}];
+    if(!Array.isArray(DB.selectedCategories)) DB.selectedCategories = DB.categories.map(c=>c.id);
+  }catch(e){
+    console.error('Error leyendo datos, se reinicia:', e);
+    DB = freshDB();
+  }
+}
+
+let saveTimer = null;
+function saveDB(){
+  // Guardado con pequeño "debounce" para no saturar en cambios rápidos.
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+    catch(e){ console.error('No se pudo guardar:', e); toast('No se pudo guardar en este navegador', 'err'); }
+  }, 120);
+}
+function saveNow(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){ console.error(e); }
+}
+
+/* ---------- Helpers de datos ---------- */
+const catName = (id) => (DB.categories.find(c=>c.id===id)||{}).name || 'Sin categoría';
+const cardsInCat = (id) => DB.cards.filter(c=>c.categoryId===id).length;
+
+/* ============================================================
+   NAVEGACIÓN ENTRE PANTALLAS
+   ============================================================ */
+let prevScreen = 'menu';
+let currentScreen = 'menu';
+
+function go(screen){
+  if(screen==='back'){ screen = prevScreen; }
+  const target = $('#screen-'+screen);
+  if(!target) return;
+  if(screen!==currentScreen){ prevScreen = currentScreen; }
+  $$('.screen').forEach(s=>s.classList.remove('active'));
+  target.classList.add('active');
+  currentScreen = screen;
+  window.scrollTo(0,0);
+  // Refrescos por pantalla
+  if(screen==='play') renderPlayScreen();
+  if(screen==='categories') renderCategories();
+  if(screen==='admin') renderAdmin();
+  if(screen==='config') renderConfig();
+  // Al volver a una partida en curso (p.ej. desde Categorías) sin temporizador
+  // corriendo, reabrimos la pausa para que el usuario reanude a voluntad.
+  if(screen==='game' && GAME && GAME.active && GAME.currentCard && !timerInterval
+     && !$('#pause-overlay').classList.contains('active')){
+    openPause('Listos para seguir', `Turno de ${GAME.teams[GAME.current].name}`);
+  }
+}
+
+// Botones con data-go
+$$('[data-go]').forEach(b=> b.addEventListener('click', ()=> go(b.dataset.go)));
+
+/* ============================================================
+   TOAST Y MODALES
+   ============================================================ */
+function toast(msg, type=''){
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  $('#toast-wrap').appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; }, 2200);
+  setTimeout(()=> t.remove(), 2600);
+}
+
+/* Modal de confirmación / prompt. Devuelve Promise. */
+function modal({title='', message='', input=false, inputValue='', inputPlaceholder='', buttons=[], extraHTML=''}){
+  return new Promise(resolve=>{
+    const ov = $('#modal');
+    $('#modal-msg').innerHTML = (title?('<b style="display:block;font-size:1.2rem;margin-bottom:8px;">'+esc(title)+'</b>'):'') + esc(message).replace(/\n/g,'<br>');
+    const inp = $('#modal-input');
+    if(input){ inp.style.display='block'; inp.value=inputValue; inp.placeholder=inputPlaceholder; }
+    else inp.style.display='none';
+    $('#modal-extra').innerHTML = extraHTML;
+    const btnWrap = $('#modal-btns');
+    btnWrap.innerHTML='';
+    const close = (val)=>{ ov.classList.remove('active'); resolve(val); };
+    buttons.forEach(b=>{
+      const el = document.createElement('button');
+      el.className = 'btn ' + (b.class||'ghost') + ' sm';
+      el.textContent = b.label;
+      el.addEventListener('click', ()=> close(b.value===undefined ? (input?inp.value:true) : b.value));
+      btnWrap.appendChild(el);
+    });
+    ov.classList.add('active');
+    if(input) setTimeout(()=>inp.focus(), 50);
+  });
+}
+function confirmBox(message, okLabel='Confirmar', okClass='primary'){
+  return modal({message, buttons:[
+    {label:'Cancelar', class:'ghost', value:false},
+    {label:okLabel, class:okClass, value:true},
+  ]});
+}
+function promptBox(message, value='', placeholder=''){
+  return modal({message, input:true, inputValue:value, inputPlaceholder:placeholder, buttons:[
+    {label:'Cancelar', class:'ghost', value:null},
+    {label:'Aceptar', class:'green'},
+  ]});
+}
+
+/* ============================================================
+   AUDIO (Web Audio API — sonidos sintetizados)
+   ============================================================ */
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+    catch(e){ return null; }
+  }
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+function beep(freq, start, dur, type='sine', gain=0.18){
+  const ctx = audioCtx; if(!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type=type; o.frequency.value=freq;
+  o.connect(g); g.connect(ctx.destination);
+  const t0 = ctx.currentTime + start;
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(gain, t0+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.start(t0); o.stop(t0+dur+0.02);
+}
+const Snd = {
+  correct(){ if(!cfg().sounds||!ensureAudio())return; beep(660,0,.12,'triangle',.2); beep(990,.1,.18,'triangle',.2); },
+  pass(){ if(!cfg().sounds||!ensureAudio())return; beep(420,0,.09,'sine',.14); beep(300,.07,.1,'sine',.12); },
+  other(){ if(!cfg().sounds||!ensureAudio())return; beep(520,0,.07,'square',.1); beep(700,.06,.09,'square',.1); },
+  danger(){ if(!cfg().sounds||!ensureAudio())return;
+    for(let i=0;i<3;i++){ beep(180,i*0.18,.16,'sawtooth',.25); beep(120,i*0.18+0.02,.16,'sawtooth',.22);} },
+  tick(){ if(!cfg().sounds||!ensureAudio())return; beep(880,0,.06,'square',.12); },
+  timeup(){ if(!cfg().sounds||!ensureAudio())return; beep(300,0,.5,'sawtooth',.22); beep(200,.18,.5,'sawtooth',.2); },
+  victory(){ if(!cfg().sounds||!ensureAudio())return;
+    const notes=[523,659,784,1046]; notes.forEach((n,i)=> beep(n,i*0.14,.3,'triangle',.22)); },
+};
+const cfg = () => DB.config;
+
+/* ============================================================
+   PANTALLA: JUGAR (setup)
+   ============================================================ */
+function renderPlayScreen(){
+  $('#team1-name').value = DB.teams[0].name;
+  $('#team2-name').value = DB.teams[1].name;
+  // Partida guardada
+  const panel = $('#continue-panel');
+  if(DB.savedGame && DB.savedGame.active){
+    const g = DB.savedGame;
+    panel.style.display='';
+    $('#continue-info').textContent =
+      `${g.teams[0].name} ${g.teams[0].score} — ${g.teams[1].score} ${g.teams[1].name} · Ronda ${g.round}`;
+  } else {
+    panel.style.display='none';
+  }
+  // Resumen categorías
+  const sel = DB.selectedCategories.filter(id=>DB.categories.some(c=>c.id===id));
+  const total = sel.reduce((n,id)=>n+cardsInCat(id),0);
+  $('#play-cat-summary').textContent = sel.length
+    ? `${sel.length} categoría(s) · ${total} tarjetas disponibles`
+    : '⚠ No hay categorías seleccionadas';
+  // Resumen config
+  const c = cfg();
+  const timeTxt = c.turnDuration ? c.turnDuration+'s' : 'sin límite';
+  const victTxt = c.victoryMode==='points' ? `a ${c.victoryTarget} pts`
+    : c.victoryMode==='rounds' ? `${c.victoryTarget} rondas` : 'modo libre';
+  const penTxt = {loseturn:'pierde turno', minus2:'-2 pts', lose:'pierde partida'}[c.penaltyMode];
+  $('#play-config-summary').textContent = `Turno ${timeTxt} · Victoria ${victTxt} · Peligrosa: ${penTxt}`;
+}
+
+$('#team1-name').addEventListener('input', e=>{ DB.teams[0].name = norm(e.target.value)||'Equipo 1'; saveDB(); });
+$('#team2-name').addEventListener('input', e=>{ DB.teams[1].name = norm(e.target.value)||'Equipo 2'; saveDB(); });
+
+$('#m-jugar').addEventListener('click', ()=> go('play'));
+$('#m-cat').addEventListener('click', ()=> go('categories'));
+$('#m-admin').addEventListener('click', ()=> go('admin'));
+$('#m-config').addEventListener('click', ()=> go('config'));
+$('#m-fs').addEventListener('click', toggleFullscreen);
+
+$('#p-start').addEventListener('click', ()=>{
+  const sel = DB.selectedCategories.filter(id=>DB.categories.some(c=>c.id===id));
+  if(!sel.length){ toast('Selecciona al menos una categoría', 'err'); go('categories'); return; }
+  const total = sel.reduce((n,id)=>n+cardsInCat(id),0);
+  if(total===0){ toast('Las categorías elegidas no tienen tarjetas', 'err'); return; }
+  startNewGame();
+});
+$('#p-continue').addEventListener('click', ()=>{
+  if(DB.savedGame && DB.savedGame.active){ GAME = DB.savedGame; resumeGame(); }
+});
+$('#p-discard').addEventListener('click', async ()=>{
+  if(await confirmBox('¿Descartar la partida guardada?','Descartar','primary')){
+    DB.savedGame=null; saveDB(); renderPlayScreen(); toast('Partida descartada');
+  }
+});
+
+/* ============================================================
+   PANTALLA: CATEGORÍAS
+   ============================================================ */
+function renderCategories(){
+  const grid = $('#cat-grid');
+  grid.innerHTML='';
+  DB.categories.forEach(cat=>{
+    const on = DB.selectedCategories.includes(cat.id);
+    const card = document.createElement('div');
+    card.className = 'cat-card' + (on?' on':'');
+    card.innerHTML = `
+      <div class="tick">✓</div>
+      <div class="cat-name"></div>
+      <div class="cat-meta">${cardsInCat(cat.id)} tarjetas${cat.custom?' · personalizada':''}</div>
+      <div class="cat-actions"></div>`;
+    card.querySelector('.cat-name').textContent = cat.name;
+    // Toggle selección
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest('.cat-actions')) return;
+      toggleCategory(cat.id);
+    });
+    // Acciones editar/eliminar
+    const acts = card.querySelector('.cat-actions');
+    const bEdit = document.createElement('button');
+    bEdit.className='btn xs ghost'; bEdit.textContent='✎ Editar';
+    bEdit.addEventListener('click', ()=> editCategory(cat.id));
+    acts.appendChild(bEdit);
+    if(cat.custom){
+      const bDel = document.createElement('button');
+      bDel.className='btn xs'; bDel.textContent='🗑 Eliminar';
+      bDel.addEventListener('click', ()=> deleteCategory(cat.id));
+      acts.appendChild(bDel);
+    }
+    grid.appendChild(card);
+  });
+  const n = DB.selectedCategories.length;
+  $('#cat-count-chip').textContent = n + (n===1?' seleccionada':' seleccionadas');
+}
+
+function toggleCategory(id){
+  const i = DB.selectedCategories.indexOf(id);
+  if(i>=0) DB.selectedCategories.splice(i,1);
+  else DB.selectedCategories.push(id);
+  saveDB(); renderCategories();
+  // Si hay partida en curso, re-mezclar mazo con la nueva selección.
+  if(GAME && GAME.active){ rebuildDeckKeepUsed(); updateRemaining(); }
+}
+
+$('#cat-all').addEventListener('click', ()=>{ DB.selectedCategories = DB.categories.map(c=>c.id); saveDB(); renderCategories(); if(GAME&&GAME.active){ rebuildDeckKeepUsed(); updateRemaining(); } });
+$('#cat-none').addEventListener('click', ()=>{ DB.selectedCategories = []; saveDB(); renderCategories(); if(GAME&&GAME.active){ rebuildDeckKeepUsed(); updateRemaining(); } });
+$('#cat-new').addEventListener('click', async ()=>{
+  const name = norm(await promptBox('Nombre de la nueva categoría:', '', 'Ej: Música y conciertos'));
+  if(!name) return;
+  if(DB.categories.some(c=>normKey(c.name)===normKey(name))){ toast('Ya existe esa categoría','err'); return; }
+  const id = uid();
+  DB.categories.push({id, name, custom:true});
+  DB.selectedCategories.push(id);
+  saveDB(); renderCategories(); toast('Categoría creada','ok');
+});
+
+async function editCategory(id){
+  const cat = DB.categories.find(c=>c.id===id); if(!cat) return;
+  const name = norm(await promptBox('Nuevo nombre de la categoría:', cat.name));
+  if(!name) return;
+  if(DB.categories.some(c=>c.id!==id && normKey(c.name)===normKey(name))){ toast('Ya existe esa categoría','err'); return; }
+  cat.name = name; saveDB(); renderCategories(); toast('Categoría renombrada','ok');
+}
+
+async function deleteCategory(id){
+  const cat = DB.categories.find(c=>c.id===id); if(!cat || !cat.custom) return;
+  const n = cardsInCat(id);
+  const ok = await confirmBox(`¿Eliminar la categoría "${cat.name}"?` + (n?`\nSe eliminarán también sus ${n} tarjeta(s).`:''),'Eliminar','primary');
+  if(!ok) return;
+  DB.categories = DB.categories.filter(c=>c.id!==id);
+  DB.cards = DB.cards.filter(c=>c.categoryId!==id);
+  DB.selectedCategories = DB.selectedCategories.filter(x=>x!==id);
+  saveDB(); renderCategories(); toast('Categoría eliminada');
+}
+
+/* ============================================================
+   PANTALLA: ADMINISTRAR PALABRAS
+   ============================================================ */
+let editingCardId = null;
+
+function fillCategorySelects(){
+  const optHTML = DB.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('#adm-cat').innerHTML = optHTML;
+  $('#adm-filter').innerHTML = `<option value="">Todas las categorías</option>` + optHTML;
+}
+
+function renderAdmin(){
+  fillCategorySelects();
+  renderAdminList();
+  $('#adm-total').textContent = DB.cards.length;
+}
+
+function renderAdminList(){
+  const q = normKey($('#adm-search').value);
+  const filt = $('#adm-filter').value;
+  const list = $('#adm-list');
+  let cards = DB.cards.slice();
+  if(filt) cards = cards.filter(c=>c.categoryId===filt);
+  if(q) cards = cards.filter(c=> normKey(c.correcta).includes(q) || normKey(c.peligrosa).includes(q));
+  cards.sort((a,b)=> catName(a.categoryId).localeCompare(catName(b.categoryId)) || a.correcta.localeCompare(b.correcta));
+  if(!cards.length){ list.innerHTML = '<div class="empty">No hay tarjetas que coincidan.</div>'; return; }
+  list.innerHTML='';
+  cards.forEach(card=>{
+    const row = document.createElement('div');
+    row.className='tcard';
+    row.innerHTML = `
+      <div><span class="w-ok"></span><span class="w-cat"></span></div>
+      <div><span class="w-bad"></span></div>
+      <div class="ops">
+        <button class="btn xs ghost">✎</button>
+        <button class="btn xs">🗑</button>
+      </div>`;
+    row.querySelector('.w-ok').textContent = card.correcta;
+    row.querySelector('.w-bad').textContent = '☠ ' + card.peligrosa;
+    row.querySelector('.w-cat').textContent = catName(card.categoryId);
+    const [bEdit,bDel] = row.querySelectorAll('.ops button');
+    bEdit.addEventListener('click', ()=> startEditCard(card.id));
+    bDel.addEventListener('click', ()=> deleteCard(card.id));
+    list.appendChild(row);
+  });
+}
+
+$('#adm-search').addEventListener('input', renderAdminList);
+$('#adm-filter').addEventListener('change', renderAdminList);
+
+$('#adm-save').addEventListener('click', saveCard);
+$('#adm-cancel').addEventListener('click', resetAdminForm);
+
+async function saveCard(){
+  const correcta = norm($('#adm-correcta').value);
+  const peligrosa = norm($('#adm-peligrosa').value);
+  const categoryId = $('#adm-cat').value;
+  if(!correcta || !peligrosa){ toast('No se permiten tarjetas vacías','err'); return; }
+  if(!categoryId){ toast('Elige una categoría','err'); return; }
+
+  // Detección inteligente de duplicados (misma categoría, mismas 2 palabras)
+  const dup = DB.cards.find(c=> c.id!==editingCardId && c.categoryId===categoryId
+      && normKey(c.correcta)===normKey(correcta) && normKey(c.peligrosa)===normKey(peligrosa));
+  if(dup){
+    const keep = await confirmBox('Ya existe una tarjeta igual en esta categoría.\n¿Guardar de todas formas?','Guardar igual','primary');
+    if(!keep) return;
+  }
+
+  if(editingCardId){
+    const card = DB.cards.find(c=>c.id===editingCardId);
+    if(card){ card.correcta=correcta; card.peligrosa=peligrosa; card.categoryId=categoryId; }
+    toast('Tarjeta actualizada','ok');
+  } else {
+    DB.cards.push({id:uid(), categoryId, correcta, peligrosa});
+    toast('Tarjeta guardada','ok');
+  }
+  saveDB();
+  resetAdminForm();
+  renderAdmin();
+}
+
+function startEditCard(id){
+  const card = DB.cards.find(c=>c.id===id); if(!card) return;
+  editingCardId = id;
+  $('#adm-correcta').value = card.correcta;
+  $('#adm-peligrosa').value = card.peligrosa;
+  $('#adm-cat').value = card.categoryId;
+  $('#admin-form-title').textContent = 'Editar tarjeta';
+  $('#adm-save').textContent = '💾 Guardar cambios';
+  $('#adm-cancel').style.display='';
+  $('#screen-admin .scroll').scrollTo({top:0, behavior:'smooth'});
+}
+
+function resetAdminForm(){
+  editingCardId = null;
+  $('#adm-correcta').value='';
+  $('#adm-peligrosa').value='';
+  $('#admin-form-title').textContent='Nueva tarjeta';
+  $('#adm-save').textContent='💾 Guardar tarjeta';
+  $('#adm-cancel').style.display='none';
+}
+
+async function deleteCard(id){
+  const card = DB.cards.find(c=>c.id===id); if(!card) return;
+  if(await confirmBox(`¿Eliminar la tarjeta "${card.correcta}" / "${card.peligrosa}"?`,'Eliminar','primary')){
+    DB.cards = DB.cards.filter(c=>c.id!==id);
+    if(editingCardId===id) resetAdminForm();
+    saveDB(); renderAdmin(); toast('Tarjeta eliminada');
+  }
+}
+
+/* ============================================================
+   IMPORTAR / EXPORTAR / RESPALDO
+   ============================================================ */
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function stamp(){ return new Date().toISOString().slice(0,19).replace(/[:T]/g,'-'); }
+
+$('#exp-json').addEventListener('click', ()=>{
+  const data = { app:'PalabraPeligrosa', version:1, exportedAt:new Date().toISOString(),
+                 categories:DB.categories, cards:DB.cards };
+  downloadFile(`palabra-peligrosa_${stamp()}.json`, JSON.stringify(data,null,2), 'application/json');
+  toast('JSON exportado','ok');
+});
+
+$('#exp-csv').addEventListener('click', ()=>{
+  const csvField = (s)=> '"' + String(s).replace(/"/g,'""') + '"';
+  const rows = [['categoria','correcta','peligrosa']];
+  DB.cards.forEach(c=> rows.push([catName(c.categoryId), c.correcta, c.peligrosa]));
+  const csv = rows.map(r=> r.map(csvField).join(',')).join('\r\n');
+  downloadFile(`palabra-peligrosa_${stamp()}.csv`, '﻿'+csv, 'text/csv');
+  toast('CSV exportado','ok');
+});
+
+$('#backup-btn').addEventListener('click', ()=>{
+  downloadFile(`respaldo-completo_${stamp()}.json`, JSON.stringify(DB,null,2), 'application/json');
+  toast('Copia de seguridad creada','ok');
+});
+
+$('#restore-btn').addEventListener('click', async ()=>{
+  const ok = await confirmBox('¿Restaurar la base inicial?\nSe reemplazarán categorías y tarjetas por las originales. Tu configuración y equipos se conservan.\n\nConsejo: crea primero una copia de seguridad.','Restaurar','primary');
+  if(!ok) return;
+  DB.categories = DEFAULT_CATEGORIES.map(c=>({...c}));
+  DB.cards = buildDefaultCards();
+  DB.selectedCategories = DB.categories.map(c=>c.id);
+  saveDB(); renderAdmin(); toast('Base inicial restaurada','ok');
+});
+
+// Import: un botón prepara el formato esperado y abre el selector de archivos
+let importKind = 'json';
+$('#imp-json').addEventListener('click', ()=>{ importKind='json'; $('#file-input').value=''; $('#file-input').click(); });
+$('#imp-csv').addEventListener('click', ()=>{ importKind='csv'; $('#file-input').value=''; $('#file-input').click(); });
+
+$('#file-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = importKind==='json' ? parseImportJSON(reader.result) : parseImportCSV(reader.result);
+      if(!parsed.cards.length){ toast('El archivo no contiene tarjetas válidas','err'); return; }
+      askMergeOrReplace(parsed);
+    }catch(err){
+      console.error(err);
+      toast('Error al leer el archivo: ' + err.message, 'err');
+    }
+  };
+  reader.onerror = ()=> toast('No se pudo leer el archivo','err');
+  reader.readAsText(file, 'UTF-8');
+});
+
+/* Devuelve {categories:[{name}], cards:[{categoryName,correcta,peligrosa}]} normalizado */
+function parseImportJSON(text){
+  const data = JSON.parse(text);
+  // Caso respaldo completo
+  const srcCards = data.cards || (data.DB && data.DB.cards) || [];
+  const srcCats  = data.categories || [];
+  if(!Array.isArray(srcCards)) throw new Error('Formato JSON inválido (falta "cards")');
+  const catById = {};
+  srcCats.forEach(c=>{ if(c && c.id) catById[c.id]=c.name; });
+  const cards = [];
+  srcCards.forEach(c=>{
+    const correcta = norm(c.correcta); const peligrosa = norm(c.peligrosa);
+    if(!correcta || !peligrosa) return;
+    const cn = c.categoryName || catById[c.categoryId] || 'Importadas';
+    cards.push({categoryName:norm(cn), correcta, peligrosa});
+  });
+  return {cards};
+}
+
+function parseImportCSV(text){
+  const rows = parseCSV(text);
+  if(!rows.length) throw new Error('CSV vacío');
+  // Detectar cabecera
+  let start = 0;
+  const h = rows[0].map(x=>normKey(x));
+  let ci={cat:0, ok:1, bad:2};
+  if(h.includes('correcta') || h.includes('categoria') || h.includes('peligrosa')){
+    ci.cat = h.indexOf('categoria'); ci.ok = h.indexOf('correcta'); ci.bad = h.indexOf('peligrosa');
+    start = 1;
+  }
+  const cards=[];
+  for(let i=start;i<rows.length;i++){
+    const r = rows[i]; if(!r || r.every(x=>!norm(x))) continue;
+    const correcta = norm(r[ci.ok]); const peligrosa = norm(r[ci.bad]);
+    const cn = norm(ci.cat>=0 ? r[ci.cat] : '') || 'Importadas';
+    if(!correcta || !peligrosa) continue;
+    cards.push({categoryName:cn, correcta, peligrosa});
+  }
+  return {cards};
+}
+
+/* Parser CSV robusto (comillas, comas, saltos de línea) */
+function parseCSV(text){
+  const rows=[]; let row=[]; let field=''; let inQ=false;
+  text = text.replace(/^﻿/,''); // quitar BOM
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; }
+      else field+=ch;
+    } else {
+      if(ch==='"') inQ=true;
+      else if(ch===','){ row.push(field); field=''; }
+      else if(ch==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(ch==='\r'){ /* ignora */ }
+      else field+=ch;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+async function askMergeOrReplace(parsed){
+  const choice = await modal({
+    title:'Importar tarjetas',
+    message:`Se encontraron ${parsed.cards.length} tarjeta(s) válidas.\n¿Cómo quieres importarlas?`,
+    buttons:[
+      {label:'Cancelar', class:'ghost', value:'cancel'},
+      {label:'Reemplazar todo', class:'primary', value:'replace'},
+      {label:'Combinar', class:'green', value:'merge'},
+    ]
+  });
+  if(choice==='cancel' || !choice) return;
+  if(choice==='replace'){
+    const ok = await confirmBox('Reemplazar eliminará TODAS tus tarjetas y categorías actuales.\n¿Seguro?','Sí, reemplazar','primary');
+    if(!ok) return;
+  }
+  applyImport(parsed, choice);
+}
+
+function getOrCreateCategoryByName(name){
+  name = norm(name) || 'Importadas';
+  let cat = DB.categories.find(c=> normKey(c.name)===normKey(name));
+  if(!cat){ cat = {id:uid(), name, custom:true}; DB.categories.push(cat); }
+  return cat.id;
+}
+
+function applyImport(parsed, mode){
+  if(mode==='replace'){
+    DB.categories = [];
+    DB.cards = [];
+  }
+  let added=0, skipped=0;
+  parsed.cards.forEach(c=>{
+    const categoryId = getOrCreateCategoryByName(c.categoryName);
+    const exists = DB.cards.some(x=> x.categoryId===categoryId
+        && normKey(x.correcta)===normKey(c.correcta) && normKey(x.peligrosa)===normKey(c.peligrosa));
+    if(exists && mode==='merge'){ skipped++; return; }
+    DB.cards.push({id:uid(), categoryId, correcta:c.correcta, peligrosa:c.peligrosa});
+    added++;
+  });
+  // Asegurar selección válida
+  if(!DB.selectedCategories.length || mode==='replace'){
+    DB.selectedCategories = DB.categories.map(c=>c.id);
+  }
+  saveDB(); renderAdmin();
+  toast(`Importación lista: ${added} agregadas${skipped?`, ${skipped} duplicadas omitidas`:''}`, 'ok');
+}
+
+/* ============================================================
+   PANTALLA: CONFIGURACIÓN
+   ============================================================ */
+const TIME_OPTS = [{v:30,l:'30s'},{v:45,l:'45s'},{v:60,l:'60s'},{v:90,l:'90s'},{v:0,l:'Sin límite'}];
+const VICT_OPTS = [{v:'points',l:'Primero en llegar a X'},{v:'rounds',l:'Más puntos en X rondas'},{v:'free',l:'Modo libre'}];
+const PEN_OPTS  = [{v:'loseturn',l:'Pierde el turno y sus puntos'},{v:'minus2',l:'Termina turno y −2 pts'},{v:'lose',l:'Pierde la partida'}];
+
+function renderConfig(){
+  const c = cfg();
+  buildSeg('#cfg-time', TIME_OPTS, c.turnDuration, v=>{ c.turnDuration=v; saveDB(); });
+  buildSeg('#cfg-victory', VICT_OPTS, c.victoryMode, v=>{ c.victoryMode=v; saveDB(); renderConfig(); });
+  buildSeg('#cfg-penalty', PEN_OPTS, c.penaltyMode, v=>{ c.penaltyMode=v; saveDB(); });
+  // Target visible solo en points/rounds
+  $('#cfg-target-wrap').style.display = (c.victoryMode==='free')?'none':'block';
+  $('#cfg-target-label').textContent = c.victoryMode==='rounds'?'Cantidad de rondas':'Puntos para ganar';
+  $('#cfg-target').value = c.victoryTarget;
+  // Reglas
+  $('#cfg-unlpass').checked = c.unlimitedPasses;
+  $('#cfg-maxpass').value = c.maxPasses;
+  $('#cfg-maxpass-wrap').style.display = c.unlimitedPasses?'none':'block';
+  $('#cfg-repeat').checked = c.allowRepeats;
+  $('#cfg-sound').checked = c.sounds;
+  $('#cfg-anim').checked = c.animations;
+}
+
+function buildSeg(sel, opts, current, onPick){
+  const wrap = $(sel); wrap.innerHTML='';
+  opts.forEach(o=>{
+    const b = document.createElement('button');
+    b.textContent=o.l;
+    if(o.v===current) b.classList.add('on');
+    b.addEventListener('click', ()=>{ onPick(o.v); $$('button',wrap).forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
+    wrap.appendChild(b);
+  });
+}
+
+$('#cfg-target').addEventListener('input', e=>{ cfg().victoryTarget = Math.max(1, parseInt(e.target.value)||1); saveDB(); });
+$('#cfg-maxpass').addEventListener('input', e=>{ cfg().maxPasses = Math.max(0, parseInt(e.target.value)||0); saveDB(); });
+$('#cfg-unlpass').addEventListener('change', e=>{ cfg().unlimitedPasses=e.target.checked; saveDB(); $('#cfg-maxpass-wrap').style.display=e.target.checked?'none':'block'; });
+$('#cfg-repeat').addEventListener('change', e=>{ cfg().allowRepeats=e.target.checked; saveDB(); });
+$('#cfg-sound').addEventListener('change', e=>{ cfg().sounds=e.target.checked; saveDB(); if(e.target.checked){ ensureAudio(); Snd.correct(); } });
+$('#cfg-anim').addEventListener('change', e=>{ cfg().animations=e.target.checked; saveDB(); });
+
+/* ============================================================
+   MOTOR DEL JUEGO
+   ============================================================ */
+let GAME = null;
+let timerInterval = null;
+let lastCardId = null;
+
+function startNewGame(){
+  ensureAudio(); // primer gesto del usuario -> habilita audio
+  const sel = DB.selectedCategories.filter(id=>DB.categories.some(c=>c.id===id));
+  GAME = {
+    active:true,
+    teams:[
+      {name:DB.teams[0].name||'Equipo 1', score:0},
+      {name:DB.teams[1].name||'Equipo 2', score:0},
+    ],
+    current:0,
+    selected:sel.slice(),
+    usedIds:[],          // ids usados en esta partida
+    deck:[],             // ids barajados pendientes
+    currentCard:null,
+    timeLeft:cfg().turnDuration,
+    turnScore:0,
+    passesUsed:0,
+    round:1,
+    turnsPlayed:0,
+    config:{...cfg()},   // "foto" de la config al iniciar
+  };
+  buildDeck();
+  DB.savedGame = GAME; saveDB();
+  go('game');
+  renderScoreboard();
+  // Interludio inicial: pedir comenzar turno
+  openTurnStart();
+}
+
+function resumeGame(){
+  ensureAudio();
+  GAME.active = true;
+  go('game');
+  renderScoreboard();
+  // Reconstruir mazo con las usadas marcadas
+  rebuildDeckKeepUsed();
+  if(GAME.currentCard){ showCard(GAME.currentCard, false); }
+  updateRemaining();
+  // Entra en pausa para reanudar con control del usuario
+  openPause('Partida reanudada', `Turno de ${GAME.teams[GAME.current].name}`);
+}
+
+/* Construye el mazo barajado con todas las tarjetas de categorías activas no usadas */
+function buildDeck(){
+  const pool = DB.cards.filter(c=> GAME.selected.includes(c.categoryId) && !GAME.usedIds.includes(c.id));
+  GAME.deck = shuffle(pool.map(c=>c.id));
+}
+/* Recalcula el mazo tras cambiar categorías, preservando lo ya usado */
+function rebuildDeckKeepUsed(){
+  // Sincroniza las categorías activas de la partida con la selección actual
+  // (permite cambiar de categoría a mitad de partida sin perder el estado).
+  GAME.selected = DB.selectedCategories.filter(id=>DB.categories.some(c=>c.id===id));
+  const pool = DB.cards.filter(c=> GAME.selected.includes(c.categoryId) && !GAME.usedIds.includes(c.id));
+  const currentId = GAME.currentCard ? GAME.currentCard.id : null;
+  GAME.deck = shuffle(pool.map(c=>c.id).filter(id=> id!==currentId));
+  saveGame();
+}
+
+/* Saca la siguiente tarjeta del mazo. Devuelve objeto carta o null si se agotó. */
+function drawCard(){
+  // Validar que las cartas del mazo aún existan (pudieron borrarse en admin)
+  while(GAME.deck.length){
+    const id = GAME.deck.shift();
+    const card = DB.cards.find(c=>c.id===id);
+    if(card && GAME.selected.includes(card.categoryId)){
+      GAME.usedIds.push(id);
+      GAME.currentCard = card;
+      return card;
+    }
+  }
+  // Mazo vacío
+  if(GAME.config.allowRepeats){
+    // Si se permiten repetidas, rebarajar todo y seguir
+    GAME.usedIds = GAME.currentCard?[GAME.currentCard.id]:[];
+    buildDeck();
+    if(GAME.deck.length) return drawCard();
+  }
+  GAME.currentCard = null;
+  return null;
+}
+
+function nextCard(animClass){
+  const card = drawCard();
+  if(!card){ handleDeckEmpty(); return; }
+  showCard(card, true, animClass);
+  updateRemaining();
+  saveGame();
+}
+
+function showCard(card, animate, animClass='anim-in'){
+  const okEl = $('#word-correcta');
+  const badEl = $('#word-peligrosa');
+  okEl.textContent = card.correcta;
+  badEl.textContent = card.peligrosa;
+  applyLenClass(okEl, card.correcta);
+  applyLenClass(badEl, card.peligrosa);
+  $('#g-cat').textContent = catName(card.categoryId);
+  if(animate && GAME.config.animations){
+    const area = $('#card-area');
+    area.classList.remove('anim-in','anim-ok','anim-pass','anim-shake');
+    void area.offsetWidth; // reflow
+    area.classList.add(animClass);
+  }
+}
+function applyLenClass(el, word){
+  el.classList.remove('len-m','len-l','len-xl');
+  const L = word.length;
+  if(L>22) el.classList.add('len-xl');
+  else if(L>16) el.classList.add('len-l');
+  else if(L>10) el.classList.add('len-m');
+}
+
+function updateRemaining(){
+  const n = GAME.deck.length;
+  $('#g-remaining').textContent = GAME.config.allowRepeats
+    ? `♻ Repeticiones activadas`
+    : `${n} ${n===1?'tarjeta restante':'tarjetas restantes'}`;
+}
+
+async function handleDeckEmpty(){
+  stopTimer();
+  Snd.timeup();
+  const choice = await modal({
+    title:'¡Se acabaron las tarjetas!',
+    message:'No quedan tarjetas sin usar en las categorías activas.',
+    buttons:[
+      {label:'Finalizar partida', class:'ghost', value:'finish'},
+      {label:'Añadir categorías', class:'blue', value:'cats'},
+      {label:'Reiniciar y re-mezclar', class:'green', value:'reshuffle'},
+    ]
+  });
+  if(choice==='reshuffle'){
+    GAME.usedIds = GAME.currentCard?[GAME.currentCard.id]:[];
+    buildDeck();
+    toast('Tarjetas re-mezcladas','ok');
+    nextCard();
+    startTimer();
+  } else if(choice==='cats'){
+    go('categories');
+  } else {
+    endGame();
+  }
+}
+
+/* ---------- Temporizador ---------- */
+function startTimer(){
+  stopTimer();
+  if(!GAME || !GAME.active) return;
+  if(GAME.config.turnDuration===0){
+    $('#g-timer').textContent='∞';
+    $('#g-timer').classList.add('nolimit');
+    $('#g-timer').classList.remove('low');
+    return;
+  }
+  $('#g-timer').classList.remove('nolimit');
+  updateTimerDisplay();
+  timerInterval = setInterval(()=>{
+    GAME.timeLeft--;
+    updateTimerDisplay();
+    if(GAME.timeLeft<=5 && GAME.timeLeft>0) Snd.tick();
+    if(GAME.timeLeft<=0){ stopTimer(); timeUp(); }
+    saveGame();
+  }, 1000);
+}
+function stopTimer(){ if(timerInterval){ clearInterval(timerInterval); timerInterval=null; } }
+function updateTimerDisplay(){
+  const t = $('#g-timer');
+  t.textContent = GAME.timeLeft;
+  t.classList.toggle('low', GAME.timeLeft<=5);
+}
+function timeUp(){
+  Snd.timeup();
+  endTurn(`⏱ ¡Tiempo! Turno de ${GAME.teams[GAME.current].name} terminado.`);
+}
+
+/* ---------- Acciones de juego ---------- */
+function actAcerto(){
+  if(!GAME || !GAME.active || !GAME.currentCard) return;
+  GAME.teams[GAME.current].score++;
+  GAME.turnScore++;
+  renderScoreboard();
+  Snd.correct();
+  saveGame();
+  // ¿Victoria inmediata por puntos?
+  if(GAME.config.victoryMode==='points' && GAME.teams[GAME.current].score>=GAME.config.victoryTarget){
+    endGame(); return;
+  }
+  nextCard('anim-ok');
+}
+
+function actPasar(){
+  if(!GAME || !GAME.active || !GAME.currentCard) return;
+  if(!GAME.config.unlimitedPasses && GAME.passesUsed>=GAME.config.maxPasses){
+    toast('Sin pases disponibles este turno','err'); return;
+  }
+  GAME.passesUsed++;
+  Snd.pass();
+  saveGame();
+  nextCard('anim-pass');
+  if(!GAME.config.unlimitedPasses){
+    const left = GAME.config.maxPasses - GAME.passesUsed;
+    toast(`Pase usado · ${left} restante(s)`);
+  }
+}
+
+function actOtra(){
+  if(!GAME || !GAME.active || !GAME.currentCard) return;
+  Snd.other();
+  // La carta reemplazada queda como usada (ya está en usedIds), simplemente sacamos otra.
+  nextCard('anim-pass');
+}
+
+function actPeligro(){
+  if(!GAME || !GAME.active || !GAME.currentCard) return;
+  Snd.danger();
+  dangerFlash();
+  const pen = GAME.config.penaltyMode;
+  const teamName = GAME.teams[GAME.current].name;
+  if(pen==='lose'){
+    // Pierde la partida automáticamente -> gana el otro
+    GAME.loserByDanger = GAME.current;
+    endGame(); return;
+  }
+  if(pen==='minus2'){
+    GAME.teams[GAME.current].score = Math.max(0, GAME.teams[GAME.current].score - 2);
+    renderScoreboard();
+    endTurn(`☠ ${teamName} dijo la palabra peligrosa. −2 puntos y fin del turno.`);
+  } else {
+    // loseturn: pierde los puntos ganados este turno
+    GAME.teams[GAME.current].score = Math.max(0, GAME.teams[GAME.current].score - GAME.turnScore);
+    renderScoreboard();
+    endTurn(`☠ ${teamName} dijo la palabra peligrosa. Pierde ${GAME.turnScore} punto(s) del turno.`);
+  }
+}
+
+function dangerFlash(){
+  if(!GAME.config.animations) return;
+  const f = $('#danger-flash');
+  f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+  const area = $('#card-area');
+  area.classList.remove('anim-shake'); void area.offsetWidth; area.classList.add('anim-shake');
+}
+
+/* ---------- Fin de turno / cambio de equipo ---------- */
+function endTurn(message){
+  stopTimer();
+  if(!GAME.active) return;
+  // Cambio de equipo
+  const prevTeam = GAME.current;
+  GAME.turnsPlayed++;
+  GAME.current = GAME.current===0?1:0;
+  // Nueva ronda cuando ambos equipos jugaron
+  if(GAME.turnsPlayed % 2 === 0) GAME.round++;
+  // Reset de turno
+  GAME.turnScore=0;
+  GAME.passesUsed=0;
+  GAME.timeLeft = GAME.config.turnDuration;
+  GAME.needNewCard = true;   // el nuevo equipo recibe una tarjeta nueva
+  renderScoreboard();
+  saveGame();
+
+  // ¿Fin por rondas?
+  if(GAME.config.victoryMode==='rounds' && GAME.round>GAME.config.victoryTarget){
+    endGame(); return;
+  }
+  // Interludio para el siguiente equipo
+  openTurnStart(message);
+}
+
+/* Overlay de inicio de turno (pausa controlada entre turnos) */
+function openTurnStart(message){
+  const g = GAME;
+  $('#pause-title').textContent = `Turno de ${g.teams[g.current].name}`;
+  const roundTxt = g.config.victoryMode==='rounds' ? ` · Ronda ${g.round}/${g.config.victoryTarget}` : ` · Ronda ${g.round}`;
+  $('#pause-sub').textContent = (message? message+' ' : '') + roundTxt;
+  $('#pz-resume').textContent = '▶ Comenzar turno';
+  renderPauseScores();
+  $('#pause-overlay').classList.add('active');
+  GAME.paused = true;
+}
+
+/* ---------- Scoreboard ---------- */
+function renderScoreboard(){
+  const sb = $('#g-scoreboard');
+  sb.innerHTML='';
+  GAME.teams.forEach((t,i)=>{
+    const el = document.createElement('div');
+    el.className='sb'+(i===GAME.current?' turn':'');
+    el.innerHTML = `<div class="sb-name"></div><div class="sb-score">${t.score}</div>`;
+    el.querySelector('.sb-name').textContent = t.name;
+    sb.appendChild(el);
+  });
+  $('#g-team').textContent = GAME.teams[GAME.current].name;
+}
+
+/* ============================================================
+   PAUSA
+   ============================================================ */
+function openPause(title, sub){
+  stopTimer();
+  GAME.paused = true;
+  $('#pause-title').textContent = title || 'Pausa';
+  $('#pause-sub').textContent = sub || `Turno de ${GAME.teams[GAME.current].name}`;
+  $('#pz-resume').textContent = '▶ Reanudar';
+  renderPauseScores();
+  $('#pause-overlay').classList.add('active');
+}
+function closePause(){ $('#pause-overlay').classList.remove('active'); GAME.paused=false; }
+
+function renderPauseScores(){
+  const wrap = $('#pause-scores'); wrap.innerHTML='';
+  GAME.teams.forEach((t,i)=>{
+    const d = document.createElement('div');
+    d.className='sb'+(i===GAME.current?' turn':'');
+    d.style.cssText='display:inline-block;margin:0 6px 10px;';
+    d.innerHTML=`<div class="sb-name"></div><div class="sb-score">${t.score}</div>`;
+    d.querySelector('.sb-name').textContent=t.name;
+    wrap.appendChild(d);
+  });
+  wrap.style.textAlign='center';
+}
+
+$('#btn-pause').addEventListener('click', ()=>{ if(GAME&&GAME.active&&!GAME.paused) openPause(); });
+
+$('#pz-resume').addEventListener('click', ()=>{
+  // Si no hay carta actual (inicio de turno), sacar una
+  closePause();
+  if(!GAME.currentCard || GAME.needNewCard){
+    GAME.needNewCard=false;
+    nextCard();
+    if(!GAME.currentCard) return; // se agotó -> handleDeckEmpty ya actuó
+  }
+  updateRemaining();
+  startTimer();
+});
+
+$('#pz-cats').addEventListener('click', ()=>{ closePause(); go('categories'); });
+$('#pz-score').addEventListener('click', openScoreEdit);
+$('#pz-menu').addEventListener('click', ()=>{
+  stopTimer(); saveGame(); GAME.paused=true;
+  $('#pause-overlay').classList.remove('active');
+  go('menu');
+  toast('Partida guardada','ok');
+});
+$('#pz-finish').addEventListener('click', async ()=>{
+  if(await confirmBox('¿Finalizar la partida ahora y ver el resultado?','Finalizar','primary')){
+    $('#pause-overlay').classList.remove('active');
+    endGame();
+  }
+});
+
+/* Al volver desde categorías a una partida activa, el flujo marca que necesita nueva carta si no hay */
+window.addEventListener('focus-game-resume', ()=>{});
+
+/* ---------- Corregir puntaje ---------- */
+function openScoreEdit(){
+  const list = $('#score-edit-list'); list.innerHTML='';
+  GAME.teams.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className='score-edit';
+    row.innerHTML = `
+      <div class="nm"></div>
+      <div class="ctr">
+        <button class="rnd" data-d="-1">−</button>
+        <div class="val">${t.score}</div>
+        <button class="rnd" data-d="1">＋</button>
+      </div>`;
+    row.querySelector('.nm').textContent = t.name;
+    const val = row.querySelector('.val');
+    row.querySelectorAll('.rnd').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        t.score = Math.max(0, t.score + parseInt(btn.dataset.d));
+        val.textContent = t.score;
+        renderScoreboard(); renderPauseScores(); saveGame();
+      });
+    });
+    list.appendChild(row);
+  });
+  $('#score-overlay').classList.add('active');
+}
+$('#sc-done').addEventListener('click', ()=> $('#score-overlay').classList.remove('active'));
+
+/* ============================================================
+   FIN DE PARTIDA / RESULTADOS
+   ============================================================ */
+function endGame(){
+  stopTimer();
+  GAME.active=false;
+  GAME.paused=false;
+  $('#pause-overlay').classList.remove('active');
+  DB.savedGame=null; saveDB(); // ya no hay partida en curso
+
+  const [a,b] = GAME.teams;
+  let winner;
+  if(GAME.loserByDanger!==undefined){
+    winner = GAME.loserByDanger===0?1:0;
+  } else if(a.score>b.score) winner=0;
+  else if(b.score>a.score) winner=1;
+  else winner=-1; // empate
+
+  $('#winner-name').textContent = winner===-1 ? '¡EMPATE!' : GAME.teams[winner].name;
+  const fs = $('#final-scores'); fs.innerHTML='';
+  GAME.teams.forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.className='fs'+(winner===i?' win':'');
+    d.innerHTML=`<div class="n"></div><div class="s">${t.score}</div>`;
+    d.querySelector('.n').textContent=t.name;
+    fs.appendChild(d);
+  });
+  go('results');
+  Snd.victory();
+  if(cfg().animations) confetti();
+}
+
+function confetti(){
+  const colors=['#ff1f3d','#18b6ff','#ffd23f','#1ec66a','#ffffff'];
+  for(let i=0;i<70;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDuration=(2.5+Math.random()*2)+'s';
+    c.style.animationDelay=(Math.random()*0.6)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 5200);
+  }
+}
+
+$('#res-rematch').addEventListener('click', ()=>{
+  // Mismos equipos y categorías, marcador a cero
+  DB.teams[0].name=GAME.teams[0].name; DB.teams[1].name=GAME.teams[1].name; saveDB();
+  startNewGame();
+});
+$('#res-new').addEventListener('click', ()=> go('play'));
+
+/* ============================================================
+   GUARDADO DE PARTIDA EN CURSO
+   ============================================================ */
+function saveGame(){
+  if(GAME && GAME.active){ DB.savedGame = GAME; saveDB(); }
+}
+
+/* ============================================================
+   BOTONES DE ACCIÓN + TECLADO
+   ============================================================ */
+$('#btn-acerto').addEventListener('click', actAcerto);
+$('#btn-pasar').addEventListener('click', actPasar);
+$('#btn-otra').addEventListener('click', actOtra);
+$('#btn-peligro').addEventListener('click', actPeligro);
+
+document.addEventListener('keydown', (e)=>{
+  if(currentScreen!=='game' || !GAME || !GAME.active) return;
+  // No interferir si hay un overlay abierto (excepto pausa que maneja Enter)
+  const pauseOpen = $('#pause-overlay').classList.contains('active');
+  const anyModal = $('#modal').classList.contains('active') || $('#score-overlay').classList.contains('active');
+  if(anyModal) return;
+  if(pauseOpen){
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#pz-resume').click(); }
+    return;
+  }
+  switch(e.key){
+    case '1': case 'Enter': case ' ': e.preventDefault(); actAcerto(); break;
+    case '2': actPeligro(); break;
+    case '3': actPasar(); break;
+    case '4': actOtra(); break;
+    case 'p': case 'P': case 'Escape': openPause(); break;
+    case 'f': case 'F': toggleFullscreen(); break;
+  }
+});
+
+/* ============================================================
+   PANTALLA COMPLETA
+   ============================================================ */
+function toggleFullscreen(){
+  const d = document.documentElement;
+  if(!document.fullscreenElement){
+    (d.requestFullscreen||d.webkitRequestFullscreen||d.msRequestFullscreen||(()=>{})).call(d)
+      ?.catch?.(()=>toast('No se pudo activar pantalla completa','err'));
+  } else {
+    (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen||(()=>{})).call(document);
+  }
+}
+$('#g-fs').addEventListener('click', toggleFullscreen);
+
+/* ============================================================
+   INICIALIZACIÓN
+   ============================================================ */
+function init(){
+  loadDB();
+  renderPlayScreen();
+  // Si hay una partida guardada activa, dejamos que el usuario decida en "Jugar".
+  go('menu');
+  // Habilitar audio en el primer toque/clic en cualquier parte
+  const unlock = ()=>{ ensureAudio(); window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('keydown', unlock);
+}
+init();
+
+/* Al volver a la pantalla de juego desde categorías durante una partida:
+   si no hay carta actual, pedir una al reanudar. */
+const _origGo = go;
+</script>
+</body>
+</html>
