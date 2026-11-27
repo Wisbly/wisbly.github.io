@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memento Mori</title>
+  <link rel="stylesheet" href="../site.css">
+</head>
+<body>
+  <main class="subpage">
+    <a class="back-link" href="/">← Inicio</a>
+    <section class="panel" id="login-panel">
+      <p class="eyebrow">ÁREA PRIVADA</p>
+      <h1>Memento Mori</h1>
+      <p class="description">Ingresa la contraseña para continuar.</p>
+      <form id="login-form">
+        <label class="field" for="password">Contraseña
+          <input id="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="action" type="submit">Ingresar</button>
+        <p class="message" id="login-message" role="status" aria-live="polite"></p>
+      </form>
+      <button class="action secondary-action" id="show-hint" type="button">Ver pista</button>
+      <form id="hint-form" hidden>
+        <label class="field" for="hint-password">Contraseña para ver la pista
+          <input id="hint-password" type="password" autocomplete="off" required>
+        </label>
+        <button class="action" type="submit">Mostrar pista</button>
+        <p class="message" id="hint-message" role="status" aria-live="polite"></p>
+      </form>
+      <p class="hint" id="hint-text" hidden>Háblale a Valeria Ávalos; su Instagram es valedav_03. La contraseña es nuestro apodo.</p>
+    </section>
+    <section class="panel" id="private-panel" hidden>
+      <p class="eyebrow">ACCESO CONCEDIDO</p>
+      <h1>Memento Mori</h1>
+      <p class="description">Has ingresado a esta página privada.</p>
+    </section>
+  </main>
+  <script>
+    "use strict";
+    const normalize = value => value.trim().toLocaleLowerCase("es");
+
+    document.querySelector("#login-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const password = document.querySelector("#password").value;
+      if (normalize(password) === "estrellita") {
+        document.querySelector("#login-panel").hidden = true;
+        document.querySelector("#private-panel").hidden = false;
+      } else {
+        document.querySelector("#login-message").textContent = "Contraseña incorrecta.";
+      }
+    });
+
+    document.querySelector("#show-hint").addEventListener("click", () => {
+      document.querySelector("#hint-form").hidden = false;
+      document.querySelector("#hint-password").focus();
+    });
+
+    document.querySelector("#hint-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const password = document.querySelector("#hint-password").value;
+      if (normalize(password) === "bata") {
+        document.querySelector("#hint-text").hidden = false;
+        document.querySelector("#hint-message").textContent = "";
+      } else {
+        document.querySelector("#hint-message").textContent = "Contraseña incorrecta.";
+      }
+    });
+  </script>
+</body>
+</html>
